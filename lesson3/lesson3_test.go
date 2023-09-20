@@ -38,7 +38,7 @@ func TestReplaceSavesBody(t *testing.T) {
 	}
 
 	if actual := respRec.Body.String(); actual != body {
-		t.Errorf("/get expected %s got %s", body, actual)
+		t.Errorf("/get \n expected: %s \n actual: %s", body, actual)
 	}
 
 }
@@ -49,7 +49,7 @@ func TestMultipleReplace(t *testing.T) {
 
 	for cnt := 0; cnt < 10; cnt++ {
 
-		body, i := fmt.Sprintf("body %d", cnt), cnt
+		body := fmt.Sprintf("body %d", cnt)
 
 		t.Run("go /replace", func(t *testing.T) {
 			t.Parallel()
@@ -59,18 +59,18 @@ func TestMultipleReplace(t *testing.T) {
 			lesson3.GetHandler(goRec, goReqReplace)
 
 			if err := goRec.Result().StatusCode; err != http.StatusOK {
-				t.Errorf("go /replace went wrong on %d, got %d", i, err)
+				t.Errorf("/replace \n error: %d", err)
 			}
 
 			goReqGet := httptest.NewRequest(http.MethodGet, "/get", nil)
 			lesson3.GetHandler(goRec, goReqGet)
 
-			if goRec.Result().StatusCode != http.StatusOK {
-				t.Errorf("go /get went wrong on %d", i)
+			if err := goRec.Result().StatusCode; err != http.StatusOK {
+				t.Errorf("/get \n error: %d", err)
 			}
 
 			if actual := goRec.Body.String(); actual != body {
-				t.Errorf("go /get got '%s' expected '%s' on %d", actual, body, i)
+				t.Errorf("/get \n expected: '%s'\n actual: '%s'", body, actual)
 			}
 		})
 	}

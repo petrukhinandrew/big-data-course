@@ -31,25 +31,9 @@ func HandleTransactions(q chan Transaction) {
 		if nxt.r == replace {
 			journal = append(journal, nxt.b)
 			body = nxt.b
-			logger.Printf("T%d with %s", nxt.r, string(nxt.b))
+			logger.Printf("transaction %d with '%s'", nxt.r, string(nxt.b))
 		}
 	}
-	logger.Printf("Exiting?")
-}
-
-func ReplaceHandler(w http.ResponseWriter, r *http.Request) {
-	logger.Printf("/replace:")
-
-	b, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		log.Printf("replaceHandlerError: %s", err.Error())
-	}
-
-	queue <- Transaction{replace, b}
-
-	w.WriteHeader(200)
 }
 
 func MakeSnapshot() {
@@ -68,30 +52,46 @@ func MakeSnapshot() {
 }
 
 func GetHandler(w http.ResponseWriter, r *http.Request) {
-	logger.Printf("/get:")
+	logger.Printf("/get: %s", body)
 
-	if _, err := w.Write(body); err != nil {
+	_, err := w.Write(body)
+
+	if err != nil {
 		logger.Printf("getHandlerError: %s", err.Error())
 	}
 
 	queue <- Transaction{get, body}
 }
 
-func RunServer() {
+func ReplaceHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Print("/replace: ")
 
-	http.HandleFunc("/replace", ReplaceHandler)
-	http.HandleFunc("/get", GetHandler)
+	b, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		logger.Printf("with error: %s", err.Error())
+	} else {
+		logger.Printf("with %s", string(b))
+	}
+
+	queue <- Transaction{replace, b}
+
+	w.WriteHeader(200)
+}
+
+func RunServer() {
+	server := http.NewServeMux()
+	server.HandleFunc("/replace", ReplaceHandler)
+	server.HandleFunc("/get", GetHandler)
 
 	logger.Println("listening: localhost:8080")
 
 	go HandleTransactions(queue)
 	go MakeSnapshot()
 
-	if err := http.ListenAndServe("localhost:8080", nil); err != http.ErrServerClosed {
-		log.Printf("listenAndServeError: %s", err.Error())
+	if err := http.ListenAndServe("localhost:8080", server); err != http.ErrServerClosed {
+		logger.Printf("listenAndServeError: %s", err.Error())
 	}
 
 }
-
-// curl -v -d "{'lolkek': 'cheburek'}" localhost:8080/replace
-// curl -v localhost:8080/get
