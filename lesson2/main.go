@@ -1,4 +1,4 @@
-package main
+package lesson2
 
 import (
 	"io/ioutil"
@@ -9,7 +9,7 @@ import (
 var logger = log.Default()
 var body []byte
 
-func replaceHandler(w http.ResponseWriter, r *http.Request) {
+func ReplaceHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	b, err := ioutil.ReadAll(r.Body)
@@ -19,13 +19,13 @@ func replaceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body = b
-	logger.Printf("Accepted replace with %s", string(body))
+	logger.Printf("/replace: got: %s", string(body))
 
 	w.WriteHeader(200)
 }
 
-func getHandler(w http.ResponseWriter, r *http.Request) {
-	logger.Printf("Accepted get, response is %s", string(body))
+func GetHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Printf("/get: response: %s", string(body))
 
 	_, err := w.Write(body)
 
@@ -36,15 +36,15 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/replace", replaceHandler)
+	http.HandleFunc("/replace", ReplaceHandler)
 
-	http.HandleFunc("/get", getHandler)
+	http.HandleFunc("/get", GetHandler)
 
-	logger.Println("listening on localhost:8080")
+	logger.Println("listening: localhost:8080")
 
 	err := http.ListenAndServe("localhost:8080", nil)
 	if err != http.ErrServerClosed {
-		log.Printf("serveError: %s", err.Error())
+		log.Printf("listenAndServeError: %s", err.Error())
 	}
 }
 
