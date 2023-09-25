@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestInitialBodyState(t *testing.T) {
@@ -19,9 +20,25 @@ func TestInitialBodyState(t *testing.T) {
 		t.Errorf("Bad initial body value")
 	}
 }
+func TestExactValue(t *testing.T) {
+	expected := "lolkek"
+
+	respRec := httptest.NewRecorder()
+	getReq := httptest.NewRequest(http.MethodGet, "/get", nil)
+
+	lesson3.GetHandler(respRec, getReq)
+
+	if respRec.Result().StatusCode != http.StatusOK {
+		t.Errorf("/get went wrong")
+	}
+
+	if actual := respRec.Body.String(); actual != expected {
+		t.Errorf("/get \n expected: %s \n actual: %s", expected, actual)
+	}
+}
 
 func TestReplaceSavesBody(t *testing.T) {
-	body := "{'lol': 'kek'}"
+	body := "lolkek"
 	replaceReq := httptest.NewRequest(http.MethodPost, "/replace", strings.NewReader(body))
 	respRec := httptest.NewRecorder()
 	lesson3.ReplaceHandler(respRec, replaceReq)
@@ -29,18 +46,7 @@ func TestReplaceSavesBody(t *testing.T) {
 	if respRec.Result().StatusCode != http.StatusOK {
 		t.Errorf("/replace went wrong")
 	}
-
-	getReq := httptest.NewRequest(http.MethodGet, "/get", nil)
-	lesson3.GetHandler(respRec, getReq)
-
-	if respRec.Result().StatusCode != http.StatusOK {
-		t.Errorf("/get went wrong")
-	}
-
-	if actual := respRec.Body.String(); actual != body {
-		t.Errorf("/get \n expected: %s \n actual: %s", body, actual)
-	}
-
+	TestExactValue(t)
 }
 
 func TestMultipleReplace(t *testing.T) {
@@ -61,7 +67,7 @@ func TestMultipleReplace(t *testing.T) {
 			if err := goRec.Result().StatusCode; err != http.StatusOK {
 				t.Errorf("/replace \n error: %d", err)
 			}
-
+			time.Sleep(time.Second)
 			goReqGet := httptest.NewRequest(http.MethodGet, "/get", nil)
 			lesson3.GetHandler(goRec, goReqGet)
 
