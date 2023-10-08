@@ -22,7 +22,7 @@ var logger = log.Default()
 var localTransactionCounter uint64 = 0
 var ltcLock sync.Mutex
 
-var source string = "Petrukhin"
+var source string = `"Petrukhin"`
 
 var peers []string
 
@@ -48,6 +48,12 @@ type Transaction struct {
 	Source  string
 	Id      uint64
 	Payload string
+}
+
+type LolKek struct {
+	Source  string
+	Id      uint64
+	Payload interface{}
 }
 
 func (t Transaction) String() string {
@@ -84,6 +90,7 @@ func (m *TransactionManager) StartSnapshoting() {
 }
 func (m *TransactionManager) StartManaging() {
 	for t := range m.queue {
+
 		if t.Id < localTransactionCounter {
 			continue
 		}
@@ -171,37 +178,71 @@ func (h *HttpHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HttpHandler) Ws(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+	defer cancel()
+
 	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true, OriginPatterns: []string{"*"}})
 	if err != nil {
 		logger.Printf("WS: %s", err)
 	}
-	logger.Println("WS: OK")
+	defer c.Close(websocket.StatusInternalError, "blabla")
 
-	for transaction := range manager.wal {
-		wsjson.Write(r.Context(), c, transaction)
+	logger.Println("WS: OK")
+	for _, transaction := range manager.wal {
+		wsjson.Write(ctx, c, transaction)
 	}
+	c.Close(websocket.StatusNormalClosure, "")
 }
 
 func Dial() {
 	for _, peer := range peers {
 		go func(peer string) {
-			ctx := context.TODO()
+			time.Sleep(time.Second * 3)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+
 			c, _, err := websocket.Dial(ctx, fmt.Sprintf("ws://%s/ws", peer), nil)
 			if err != nil {
 				logger.Printf("Dial: %s", err)
 				return
 			}
-			for {
-				var transaction Transaction
-				wsjson.Read(ctx, c, &transaction)
-				manager.queue <- transaction
+
+			defer c.Close(websocket.StatusInternalError, "blabla")
+
+			logger.Printf("Dialing %s", peer)
+
+			var v interface{}
+			if err := wsjson.Read(ctx, c, &v); err != nil {
+				logger.Printf("Dial ERR : %s ! %v", err, v)
+				return
 			}
+			rawTransaction := fmt.Sprintf("%v", v)
+			var transaction LolKek
+
+			if err := json.Unmarshal([]byte(rawTransaction), &transaction); err != nil {
+				logger.Printf("Dial ERR : %s ! %s", err, rawTransaction)
+				return
+			}
+
+			payload, err := json.Marshal(transaction.Payload)
+			if err != nil {
+				logger.Printf("Dial ERR : %s", err)
+				return
+			}
+			response := Transaction{transaction.Source, transaction.Id, string(payload)}
+			logger.Printf("LOKKEK: %s", response.String())
+			manager.queue <- response
 
 		}(peer)
 	}
 }
 
-func RunServer() {
+func RunServer(port string) {
+	if port == "8080" {
+		// peers = []string{"localhost: 8081"}
+	} else {
+		peers = []string{"localhost:8080"}
+	}
 	server := http.NewServeMux()
 	handler := HttpHandler{}
 
@@ -210,13 +251,13 @@ func RunServer() {
 	server.HandleFunc("/replace", handler.Replace)
 	server.HandleFunc("/get", handler.Get)
 	server.HandleFunc("/ws", handler.Ws)
-	logger.Println("listening: localhost:8080")
+	logger.Printf("listening: localhost:%s", port)
 
 	go manager.StartManaging()
 	go manager.StartSnapshoting()
 	go Dial()
-	if err := http.ListenAndServe("localhost:8080", server); err != http.ErrServerClosed {
+
+	if err := http.ListenAndServe("localhost:"+port, server); err != http.ErrServerClosed {
 		logger.Printf("listenAndServeError: %s", err.Error())
 	}
-
 }
