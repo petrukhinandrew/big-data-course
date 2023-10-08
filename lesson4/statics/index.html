@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript">
+    window.addEventListener("load", async function() {
+        var res = await fetch("/get");
+        var get = document.getElementById("get");
+        get.textContent = await res.text();
+
+        var mySocket = new WebSocket("ws://127.0.0.1:8080/ws");
+        mySocket.onmessage = async function (event) {
+            var output = document.getElementById("output");
+            const newDiv = document.createElement("div");
+            newDiv.textContent = event.data;
+            output.appendChild(newDiv);
+
+            var res = await fetch("/get");
+            var get = document.getElementById("get");
+            get.textContent = await res.text();
+
+            var res = await fetch("/vclock");
+            var vclock = document.getElementById("vclock");
+            vclock.textContent = await res.text();
+        };
+        
+        var replace = document.forms["replace"]
+        replace.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            var data = replace["text"].value;
+            var res = fetch("/replace", {
+                method: "POST",
+                body: data
+            });
+        })
+    });
+</script>
+<style>
+</style>
+</head>
+<body>
+    <h2>/replace</h2>
+    <form name="replace">
+        <textarea name="text"></textarea>
+        <input type="submit" value="Submit"></input>
+    </form>
+    <h2>/get</h2>
+    <div id="get"></div>
+    <h2>/vclock</h2>
+    <div id="vclock"></div>
+    <h2>/ws</h2>
+    <div id="output"></div>
+</body>
+</html>

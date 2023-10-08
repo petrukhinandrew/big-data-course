@@ -1,7 +1,7 @@
 package main
 
-import "lesson3"
+import "lesson4"
 
 func main() {
-	lesson3.RunServer()
+	lesson4.RunServer()
 }
