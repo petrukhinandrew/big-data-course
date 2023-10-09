@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -186,53 +187,69 @@ func (h *HttpHandler) Ws(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("WS: %s", err)
 	}
 	defer c.Close(websocket.StatusInternalError, "blabla")
+	buf := []string{}
 
 	logger.Println("WS: OK")
 	for _, transaction := range manager.wal {
-		wsjson.Write(ctx, c, transaction)
+
+		buf = append(buf, transaction)
+
 	}
+	wsjson.Write(ctx, c, "["+strings.Join(buf, ", ")+"]")
 	c.Close(websocket.StatusNormalClosure, "")
 }
 
 func Dial() {
 	for _, peer := range peers {
 		go func(peer string) {
-			time.Sleep(time.Second * 3)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
+			for {
+				time.Sleep(time.Second * 2)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 
-			c, _, err := websocket.Dial(ctx, fmt.Sprintf("ws://%s/ws", peer), nil)
-			if err != nil {
-				logger.Printf("Dial: %s", err)
-				return
+				c, _, err := websocket.Dial(ctx, fmt.Sprintf("ws://%s/ws", peer), nil)
+				if err != nil {
+					logger.Printf("Dial: %s", err)
+					continue
+				}
+
+				logger.Printf("Dialing %s", peer)
+
+				var v interface{}
+
+				if err := wsjson.Read(ctx, c, &v); err != nil {
+					if err != nil {
+						if v != nil {
+							logger.Printf("Dial ws read error: %s, %v", err, v)
+						}
+						cancel()
+						c.Close(websocket.StatusInternalError, "blabla")
+						break
+					}
+				}
+
+				rawTransaction := fmt.Sprintf("%v", v)
+				var transactions []LolKek
+
+				if err := json.Unmarshal([]byte(rawTransaction), &transactions); err != nil {
+					logger.Printf("Dial unmarhsal error: %s, %s", err, rawTransaction)
+					cancel()
+					c.Close(websocket.StatusInternalError, "blabla")
+					continue
+				}
+				for _, transaction := range transactions {
+					payload, err := json.Marshal(transaction.Payload)
+					if err != nil {
+						cancel()
+						c.Close(websocket.StatusInternalError, "blabla")
+						logger.Printf("Dial patch error: %s", err)
+						continue
+					}
+					c.Close(websocket.StatusNormalClosure, "WS CLosed OK")
+					response := Transaction{transaction.Source, transaction.Id, string(payload)}
+					logger.Printf("WS read transaction: %s", response.String())
+					manager.queue <- response
+				}
 			}
-
-			defer c.Close(websocket.StatusInternalError, "blabla")
-
-			logger.Printf("Dialing %s", peer)
-
-			var v interface{}
-			if err := wsjson.Read(ctx, c, &v); err != nil {
-				logger.Printf("Dial ERR : %s ! %v", err, v)
-				return
-			}
-			rawTransaction := fmt.Sprintf("%v", v)
-			var transaction LolKek
-
-			if err := json.Unmarshal([]byte(rawTransaction), &transaction); err != nil {
-				logger.Printf("Dial ERR : %s ! %s", err, rawTransaction)
-				return
-			}
-
-			payload, err := json.Marshal(transaction.Payload)
-			if err != nil {
-				logger.Printf("Dial ERR : %s", err)
-				return
-			}
-			response := Transaction{transaction.Source, transaction.Id, string(payload)}
-			logger.Printf("LOKKEK: %s", response.String())
-			manager.queue <- response
-
 		}(peer)
 	}
 }
