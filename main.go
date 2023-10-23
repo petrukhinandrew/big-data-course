@@ -1,7 +1,11 @@
 package main
 
-import "lesson3"
+import (
+	"lesson4"
+	"os"
+)
 
 func main() {
-	lesson3.RunServer()
+	args := os.Args[1:]
+	lesson4.RunServer(args[0])
 }
