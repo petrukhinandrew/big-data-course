@@ -1,0 +1,49 @@
+{
+  "name": "typescript-react-project",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@types/lodash": "",
+    "@types/react": "",
+    "@types/react-dom": "",
+    "@types/sprintf-js": "",
+    "axios": "",
+    "effector": "",
+    "effector-react": "",
+    "fast-json-patch": "",
+    "lodash": "",
+    "react": "",
+    "react-dom": "",
+    "react-icons": "",
+    "sprintf-js": "",
+    "ts-loader": "",
+    "websocket-ts": ""
+  },
+  "scripts": {
+    "watch": "webpack watch",
+    "build": "webpack"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "webpack": "",
+    "webpack-cli": ""
+  }
+}
