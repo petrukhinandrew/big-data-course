@@ -195,7 +195,9 @@ func (h *HttpHandler) Ws(w http.ResponseWriter, r *http.Request) {
 		buf = append(buf, transaction)
 
 	}
-	wsjson.Write(ctx, c, "["+strings.Join(buf, ", ")+"]")
+	tmp := "["+strings.Join(buf, ", ")+"]"
+	logger.Println(tmp)
+	wsjson.Write(ctx, c, tmp)
 	c.Close(websocket.StatusNormalClosure, "")
 }
 

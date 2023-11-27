@@ -1,0 +1,37 @@
+{
+  "name": "typescript-react-project",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@types/react": "",
+    "@types/react-dom": "",
+    "effector": "",
+    "effector-react": "",
+    "fast-json-patch": "",
+    "react": "",
+    "react-dom": "",
+    "ts-loader": "",
+    "websocket-ts": ""
+  },
+  "scripts": {
+    "watch": "webpack watch",
+    "build": "webpack"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "typescript": "",
+    "webpack": "",
+    "webpack-cli": ""
+  }
+}
