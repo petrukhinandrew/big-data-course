@@ -4,3 +4,5 @@ lesson7/node_modules/*
 lesson8/dist/*
 lesson8/node_modules/*
 main.exe
+
+*.bat

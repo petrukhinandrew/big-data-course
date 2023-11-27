@@ -13,6 +13,7 @@ const patchSnapEv = createEvent()
 const $snap = createStore<any>({})
 $snap.on(patchSnapEv, (state, patch:any) => {
   const doc = applyPatch(state, patch, false, false).newDocument
+  console.log(doc)
   return doc
 })
 
@@ -45,16 +46,22 @@ function PlayerInput() {
   const snap = useStore($snap)
 
   const handleClick = function() {
+    snap[playerName] = {"x": 20, "y": 20}
     fetch("http://127.0.0.1:8080/replace", {
       method: "POST",
+      mode: "no-cors",
       body:`[{"op":"add", "path": "/${playerName}", "value": {"x":20, "y":20}}]`})
+    renderTheThing()
   }
 
-  const updatePlayer = function(x:any, y:any) {
-    console.log(`[{"op":"add", "path": "/${playerName}", "value": {"x":${x}, "y":${y}}}]`);
+  const updatePlayer = function(x:number, y:number) {
+    snap[playerName] = {"x": x, "y": y}
     fetch("http://127.0.0.1:8080/replace", {
       method: "POST",
+      mode: "no-cors",
       body:`[{"op":"add", "path": "/${playerName}", "value": {"x":${x}, "y":${y}}}]`})
+    console.log(snap)
+    renderTheThing()
   }
   const handleUp = function() {
     let player = snap[playerName]
@@ -111,13 +118,17 @@ function Players() {
   return <>{players}</>
 }
 
-ReactDOM.render(
-  <React.StrictMode>
-    <PlayerInput></PlayerInput>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
-      <rect x='0' y='0' width='100%' height='100%' fill='tomato' opacity='0.75' />
-      <Players></Players>
-    </svg>
-  </React.StrictMode>,
-  document.getElementById("root")
-)
+const renderTheThing = function() {
+    ReactDOM.render(
+    <React.StrictMode>
+      <PlayerInput></PlayerInput>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+        <rect x='0' y='0' width='100%' height='100%' fill='tomato' opacity='0.75' />
+        <Players></Players>
+      </svg>
+    </React.StrictMode>,
+    document.getElementById("root")
+  )
+}
+
+renderTheThing()
